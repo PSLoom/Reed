@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+
+    <VersionTagPrefix>reed</VersionTagPrefix>
+    <PowerShellManifest>PSLoom.Reed.psd1</PowerShellManifest>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>Declarative argument completion for native commands — a PSLoom harness</Description>
+    <PackageId>PSLoom.Reed</PackageId>
+    <PackageTags>powershell; pwsh; psloom; harness; completion</PackageTags>
+    <PackageReadmeFile Condition="Exists('README.md')">README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" Condition="Exists('README.md')" />
+    <None Include="$(RepositoryRoot)LICENSE.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="System.Management.Automation" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management.Automation" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Compile-time only: Warp.dll must never be copied next to PSLoom.Reed.dll. At runtime the harness binds to the copy
+      shipped by the PSLoom kernel module; a second copy would load duplicate, non-convertible contract types.
+      Reed never references the kernel (PSLoom.csproj).
+    -->
+    <ProjectReference Include="..\Warp\Warp.csproj" Private="false" ExcludeAssets="runtime" />
+  </ItemGroup>
+</Project>

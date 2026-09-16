@@ -24,6 +24,10 @@ public sealed class ReedHarness : IHarness {
     builder.Verbs.Add<OptionGroupVerb>();
     builder.Verbs.Add<UseVerb>();
 
-    ReedSession.ForCurrent().Traces = builder.Diagnostics.CreateLog<CompletionTrace>();
+    var session = ReedSession.ForCurrent();
+    session.Traces = builder.Diagnostics.CreateLog<CompletionTrace>();
+
+    // Treadles inherit the completion of the command they run, so Reed follows the catalog from the moment it is composed.
+    TreadleCompletion.Follow(session, builder.Treadles);
   }
 }

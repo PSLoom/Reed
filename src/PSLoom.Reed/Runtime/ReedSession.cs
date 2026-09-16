@@ -4,6 +4,7 @@
 using System.Management.Automation.Runspaces;
 using System.Runtime.CompilerServices;
 using PSLoom.Warp.Diagnostics;
+using PSLoom.Warp.Treadles;
 
 namespace PSLoom.Reed.Runtime;
 
@@ -36,10 +37,27 @@ internal sealed class ReedSession {
   public CompletionCache Cache { get; } = new();
 
   /// <summary>
+  ///   Gets the treadles seen in this runspace, by name: what each one runs, and with which tokens baked in.
+  /// </summary>
+  public Dictionary<string, TreadleDefinition> Treadles { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+  /// <summary>
   ///   Gets the names already wired with <c>Register-ArgumentCompleter -Native</c>. Wiring is never unwound, so a name is wired
   ///   at most once per runspace.
   /// </summary>
   public HashSet<string> Wired { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+  /// <summary>
+  ///   Gets the names waiting to be wired because no engine was available when they appeared — a treadle declared before Reed ran
+  ///   any cmdlet of its own. The next registration flushes them.
+  /// </summary>
+  public HashSet<string> PendingWiring { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+  /// <summary>
+  ///   Gets or sets the engine intrinsics, captured the first time a Reed cmdlet or verb runs. Event handlers have no cmdlet of
+  ///   their own to ask.
+  /// </summary>
+  public EngineIntrinsics? Engine { get; set; }
 
   /// <summary>
   ///   Gets or sets the trace log, provided when the harness is composed.

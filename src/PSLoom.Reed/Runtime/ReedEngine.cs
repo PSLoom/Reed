@@ -10,17 +10,22 @@ namespace PSLoom.Reed.Runtime;
 /// </summary>
 internal static class ReedEngine {
   /// <summary>
-  ///   Gets the engine intrinsics of the session running a cmdlet.
+  ///   Gets the engine intrinsics of the session running a cmdlet, and remembers them for the paths that have no cmdlet of their
+  ///   own — the treadle catalog's change handler.
   /// </summary>
   public static EngineIntrinsics Of(PSCmdlet cmdlet) {
     ArgumentNullException.ThrowIfNull(cmdlet);
 
-    return cmdlet.GetVariableValue("ExecutionContext") as EngineIntrinsics
-           ?? throw ReedException.InvalidDeclaration("The session's engine is unavailable.", cmdlet.MyInvocation.MyCommand?.Name);
+    var engine = cmdlet.GetVariableValue("ExecutionContext") as EngineIntrinsics
+                 ?? throw ReedException.InvalidDeclaration("The session's engine is unavailable.", cmdlet.MyInvocation.MyCommand?.Name);
+
+    ReedSession.ForCurrent().Engine = engine;
+
+    return engine;
   }
 
   /// <summary>
-  ///   Registers a completer in the current runspace and wires its names into tab completion.
+  ///   Registers a completer in the current runspace and wires its names into tab completion, plus the treadles that run it.
   /// </summary>
   /// <exception cref="ReedException">A name is taken, or wiring failed.</exception>
   public static CompleterRegistration Register(EngineIntrinsics engine, CompleterDefinition definition, bool force) {
@@ -32,6 +37,7 @@ internal static class ReedEngine {
     session.Cache.Remove(replaced);
 
     CompleterWiring.Ensure(engine, session, registration.Names);
+    TreadleCompletion.Wire(engine, session);
 
     return registration;
   }

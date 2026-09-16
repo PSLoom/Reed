@@ -30,6 +30,7 @@ internal static class CompleterWiring {
 
       try {
         engine.InvokeCommand.InvokeScript(REGISTER_SCRIPT, name, bridge);
+        session.PendingWiring.Remove(name);
       }
       catch (Exception exception) when (exception is not (OutOfMemoryException or StackOverflowException)) {
         session.Wired.Remove(name);

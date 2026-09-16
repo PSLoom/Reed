@@ -2,6 +2,7 @@
 // See the LICENSE file in the repository root for full license text.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation.Language;
 using PSLoom.Reed.Completion;
 
@@ -36,12 +37,16 @@ public static class ReedBridge {
       session = ReedSession.ForCurrent();
 
       if (commandAst is null ||
-          !session.Completers.TryGet(command, out var registration)) {
+          !TryResolve(session, command, out var registration, out var prefix)) {
         session.Record(command, word, Stopwatch.GetElapsedTime(started), 0, null);
         return [];
       }
 
-      var tokens = TokenClassifier.Preceding(commandAst, cursorPosition);
+      // A treadle's baked tokens sit in front of whatever the user typed, so the line resolves as the target command would.
+      var tokens = prefix.Count == 0
+        ? TokenClassifier.Preceding(commandAst, cursorPosition)
+        : [.. prefix, .. TokenClassifier.Preceding(commandAst, cursorPosition)];
+
       var results = CompletionEngine.Complete(session, ContextResolver.Resolve(registration.Compiled, tokens), word);
 
       session.Record(command, word, Stopwatch.GetElapsedTime(started), results.Count, null);
@@ -52,5 +57,15 @@ public static class ReedBridge {
       session?.Record(command, word, Stopwatch.GetElapsedTime(started), 0, exception);
       return [];
     }
+  }
+
+  private static bool TryResolve(ReedSession session, string command, [NotNullWhen(true)] out CompleterRegistration? registration,
+  out IReadOnlyList<string> prefix) {
+    if (!session.Completers.TryGet(command, out registration)) {
+      return TreadleCompletion.TryResolve(session, command, out registration, out prefix);
+    }
+
+    prefix = [];
+    return true;
   }
 }

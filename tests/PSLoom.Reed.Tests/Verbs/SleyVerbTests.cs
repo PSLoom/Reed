@@ -63,6 +63,25 @@ public sealed class SleyVerbTests {
   }
 
   [Fact]
+  public void AnErrorThreeScopesDeepIsReportedExactlyOnce() {
+    using var session = new CompletionSession();
+
+    // Draft → Sley → Command → Command: the failure happens inside three nested InvokeWithContext calls, each a nested pipeline
+    // that would happily swallow it or report it at every level.
+    session.Run(
+      """
+      Invoke-Loom {
+        Thread Reed
+        Sley git { Command remote { Command add { Use OptionGroup Missing } } }
+        $global:afterSley = $true
+      }
+      """);
+
+    session.Streams.Error.ShouldHaveSingleItem().FullyQualifiedErrorId.ShouldStartWith(ReedException.OPTION_GROUP_NOT_FOUND);
+    session.Run("$global:afterSley").Single().BaseObject.ShouldBe(true);
+  }
+
+  [Fact]
   public void ValidateRegistersNothing() {
     using var session = new CompletionSession();
 

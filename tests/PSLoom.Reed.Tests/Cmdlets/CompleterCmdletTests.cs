@@ -3,6 +3,7 @@
 
 using JetBrains.Annotations;
 using PSLoom.Reed.Cmdlets;
+using PSLoom.Reed.Runtime;
 using PSLoom.Reed.Tests.Utility;
 
 namespace PSLoom.Reed.Tests.Cmdlets;
@@ -58,6 +59,32 @@ public sealed class CompleterCmdletTests {
     session.Run("New-Completer git -ScriptBlock { Command commit { Use OptionGroup Missing } }");
 
     session.Streams.Error.ShouldHaveSingleItem().FullyQualifiedErrorId.ShouldStartWith(ReedException.OPTION_GROUP_NOT_FOUND);
+  }
+
+  [Fact]
+  public void AnErrorThreeScopesDeepIsReportedExactlyOnce() {
+    using var session = new CompletionSession();
+
+    // The same nesting as a draft, through the cmdlet path: IDslRunner collects the failure and New-Completer writes it once.
+    session.Run("New-Completer git -ScriptBlock { Command remote { Command add { Use OptionGroup Missing } } }");
+
+    session.Streams.Error.ShouldHaveSingleItem().FullyQualifiedErrorId.ShouldStartWith(ReedException.OPTION_GROUP_NOT_FOUND);
+  }
+
+  [Fact]
+  public void UnregisteringLeavesTheNativeWiringInPlace() {
+    using var session = new CompletionSession();
+    session.Run($"{GIT} | Register-Completer");
+    var reed = ReedSession.For(session.Runspace);
+
+    session.Run("Unregister-Completer git");
+
+    // PowerShell cannot remove a native completer from a live session, so Reed never tries: the names stay wired, and the bridge
+    // simply finds no registration behind them.
+    reed.Wired.ShouldBe(["git", "g"], true);
+    session.Run($"{GIT} | Register-Completer");
+    reed.Wired.Count.ShouldBe(2);
+    session.Complete("git co").ShouldBe(["commit"]);
   }
 
   [Fact]

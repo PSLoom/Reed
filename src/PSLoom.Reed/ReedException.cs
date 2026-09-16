@@ -17,6 +17,9 @@ public sealed class ReedException : PowerShellException {
   internal const string WIRING_FAILED = "REED_WIRING_FAILED";
   internal const string NO_RUNSPACE = "REED_NO_RUNSPACE";
   internal const string PROVIDER_NAME_TAKEN = "REED_PROVIDER_NAME_TAKEN";
+  internal const string COMPLETER_NOT_PORTABLE = "REED_COMPLETER_NOT_PORTABLE";
+  internal const string COMPLETER_NOT_READABLE = "REED_COMPLETER_NOT_READABLE";
+  internal const string COMPLETER_NOT_FOUND = "REED_COMPLETER_NOT_FOUND";
 
   private ReedException(string errorId, ErrorCategory errorCategory, string message, object? targetObject, Exception? innerException = null)
     : base(errorId, errorCategory, message, targetObject, innerException) { }
@@ -43,6 +46,18 @@ public sealed class ReedException : PowerShellException {
   internal static ReedException ProviderNameTaken(string name)
     => new(PROVIDER_NAME_TAKEN, ErrorCategory.ResourceExists,
       $"A completion provider named '{name}' is already registered; use -Force to replace it.", name);
+
+  internal static ReedException CompleterNotFound(string command)
+    => new(COMPLETER_NOT_FOUND, ErrorCategory.ObjectNotFound, $"No completer is registered for '{command}' in this session.", command);
+
+  internal static ReedException CompleterNotPortable(string command, IReadOnlyList<string> paths)
+    => new(COMPLETER_NOT_PORTABLE, ErrorCategory.InvalidData,
+      $"The completer for '{command}' declares inline sources, which cannot be written to a file: {string.Join(", ", paths)}. " +
+      "Use -Provider instead, or -Force to export without them.", command);
+
+  internal static ReedException CompleterNotReadable(string path, string reason, Exception? exception = null)
+    => new(COMPLETER_NOT_READABLE, ErrorCategory.InvalidData, $"'{path}' is not a completer this version can read: {reason}", path,
+      exception);
 
   internal static ReedException WiringFailed(string command, Exception exception)
     => new(WIRING_FAILED, ErrorCategory.NotSpecified,

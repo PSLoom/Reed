@@ -18,7 +18,7 @@
 
   CmdletsToExport = @(
     'New-Completer', 'Register-Completer', 'Get-Completer', 'Unregister-Completer',
-    'Test-Completer', 'Trace-Completion',
+    'Test-Completer', 'Export-Completer', 'Import-Completer', 'Trace-Completion',
     'Register-CompletionProvider', 'Get-CompletionProvider', 'Unregister-CompletionProvider',
     'Clear-CompletionCache'
   )

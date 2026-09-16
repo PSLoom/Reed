@@ -16,7 +16,10 @@
   VariablesToExport = @()
   AliasesToExport = @()
 
-  CmdletsToExport = @()
+  CmdletsToExport = @(
+    'New-Completer', 'Register-Completer', 'Get-Completer', 'Unregister-Completer',
+    'Test-Completer', 'Trace-Completion'
+  )
 
   PrivateData = @{
     PSData = @{

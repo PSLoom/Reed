@@ -1,17 +1,21 @@
 // Copyright (c) Bruno Sales <me@baliestri.dev>. Licensed under the MIT License.
 // See the LICENSE file in the repository root for full license text.
 
-using System.Collections.Frozen;
 using PSLoom.Reed.Model;
 
 namespace PSLoom.Reed.Completion;
 
 /// <summary>
-///   A command of the compiled model: frozen lookups for resolution and pre-sorted candidate arrays for filtering. Built once, at
-///   registration, because every Tab press walks it.
+///   A command of the compiled model: case-insensitive lookups for resolution and pre-sorted candidate arrays for filtering. Built
+///   once, at registration, because every Tab press walks it.
 /// </summary>
+/// <remarks>
+///   The lookups are plain dictionaries, not frozen ones. A completer node holds a handful of names, where a frozen dictionary buys
+///   nothing measurable on a Tab press already ~10,000 times under budget, but its first construction costs several milliseconds of
+///   JIT per generic instantiation — paid inside the draft, whose budget has no such headroom.
+/// </remarks>
 internal sealed class CompiledCommand {
-  private CompiledCommand(string name, FrozenDictionary<string, CompiledCommand> commands, FrozenDictionary<string, CompiledOption> options,
+  private CompiledCommand(string name, IReadOnlyDictionary<string, CompiledCommand> commands, IReadOnlyDictionary<string, CompiledOption> options,
     CompiledCandidate[] commandCandidates, CompiledCandidate[] optionCandidates, IReadOnlyList<ArgumentNode> arguments) {
     Name = name;
     Commands = commands;
@@ -26,12 +30,12 @@ internal sealed class CompiledCommand {
   /// <summary>
   ///   Gets the subcommands, by name and by alias.
   /// </summary>
-  public FrozenDictionary<string, CompiledCommand> Commands { get; }
+  public IReadOnlyDictionary<string, CompiledCommand> Commands { get; }
 
   /// <summary>
   ///   Gets the options, by name and by alias.
   /// </summary>
-  public FrozenDictionary<string, CompiledOption> Options { get; }
+  public IReadOnlyDictionary<string, CompiledOption> Options { get; }
 
   /// <summary>
   ///   Gets the subcommand candidates, ordinal-sorted for prefix filtering.
@@ -73,9 +77,7 @@ internal sealed class CompiledCommand {
       }
     }
 
-    return new CompiledCommand(node.Name, commands.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase),
-      options.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase), Sorted(commandCandidates), Sorted(optionCandidates),
-      [.. node.Arguments]);
+    return new CompiledCommand(node.Name, commands, options, Sorted(commandCandidates), Sorted(optionCandidates), [.. node.Arguments]);
   }
 
   private static IEnumerable<(string Text, bool IsAlias)> Spellings(string name, IReadOnlyList<string> aliases)

@@ -69,6 +69,11 @@ internal sealed class ReedSession {
   /// </summary>
   public ScriptBlock? Bridge { get; set; }
 
+  /// <summary>
+  ///   Gets or sets the compiled script that registers native completers, reused by every registration in this runspace.
+  /// </summary>
+  public ScriptBlock? RegisterScript { get; set; }
+
   public static ReedSession For(Runspace runspace) {
     ArgumentNullException.ThrowIfNull(runspace);
     return _sessions.GetValue(runspace, static _ => new ReedSession());

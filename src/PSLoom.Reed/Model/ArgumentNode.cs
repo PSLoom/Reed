@@ -23,6 +23,11 @@ public sealed class ArgumentNode {
   /// </summary>
   public bool Variadic { get; }
 
+  /// <summary>
+  ///   Gets or sets what completes this slot; <see langword="null" /> declares the slot without completing it.
+  /// </summary>
+  public CompletionSource? Source { get; internal set; }
+
   /// <inheritdoc />
   public override string ToString()
     => Variadic ? $"{Name}…" : Name;

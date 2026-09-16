@@ -15,8 +15,8 @@ internal static class ReedEngine {
   public static EngineIntrinsics Of(PSCmdlet cmdlet) {
     ArgumentNullException.ThrowIfNull(cmdlet);
 
-    return cmdlet.GetVariableValue("ExecutionContext") as EngineIntrinsics ??
-           throw ReedException.InvalidDeclaration("The session's engine is unavailable.", cmdlet.MyInvocation.MyCommand?.Name);
+    return cmdlet.GetVariableValue("ExecutionContext") as EngineIntrinsics
+           ?? throw ReedException.InvalidDeclaration("The session's engine is unavailable.", cmdlet.MyInvocation.MyCommand?.Name);
   }
 
   /// <summary>
@@ -25,10 +25,21 @@ internal static class ReedEngine {
   /// <exception cref="ReedException">A name is taken, or wiring failed.</exception>
   public static CompleterRegistration Register(EngineIntrinsics engine, CompleterDefinition definition, bool force) {
     var session = ReedSession.ForCurrent();
+    var replaced = Replaced(session, definition);
     var registration = session.Completers.Add(definition, force);
 
-    CompleterWiring.Ensure(engine, session, registration);
+    // Whatever the replaced declaration cached answered for a tree that no longer exists.
+    session.Cache.Remove(replaced);
+
+    CompleterWiring.Ensure(engine, session, registration.Names);
 
     return registration;
   }
+
+  private static IEnumerable<Guid> Replaced(ReedSession session, CompleterDefinition definition)
+    => definition.Names
+      .Select(name => session.Completers.TryGet(name, out var existing) ? existing : null)
+      .OfType<CompleterRegistration>()
+      .Distinct()
+      .SelectMany(existing => ModelSources.Of(existing.Definition).Select(source => source.Id));
 }

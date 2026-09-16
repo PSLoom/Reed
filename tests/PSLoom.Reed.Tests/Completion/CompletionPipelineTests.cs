@@ -5,6 +5,7 @@ using System.Management.Automation.Language;
 using JetBrains.Annotations;
 using PSLoom.Reed.Completion;
 using PSLoom.Reed.Model;
+using PSLoom.Reed.Runtime;
 
 namespace PSLoom.Reed.Tests.Completion;
 
@@ -12,6 +13,7 @@ namespace PSLoom.Reed.Tests.Completion;
 [TestSubject(typeof(ContextResolver))]
 [TestSubject(typeof(CompletionEngine))]
 public sealed class CompletionPipelineTests {
+  private static readonly ReedSession _session = new();
   private static readonly CompiledCompleter _git = Compile();
 
   [Theory]
@@ -90,21 +92,23 @@ public sealed class CompletionPipelineTests {
   public void AnOptionAlreadyOnTheLineIsNotOfferedAgain() {
     var context = ContextResolver.Resolve(_git, ["commit", "--amend"]);
 
-    CompletionEngine.Complete(context, "--").Select(result => result.CompletionText).ShouldBe(["--message"]);
+    CompletionEngine.Complete(_session, context, "--").Select(result => result.CompletionText).ShouldBe(["--message"]);
   }
 
   [Fact]
   public void AnOptionValueOffersNothingUntilSourcesExist()
-    => CompletionEngine.Complete(ContextResolver.Resolve(_git, ["commit", "-m"]), "").ShouldBeEmpty();
+    => CompletionEngine.Complete(_session, ContextResolver.Resolve(_git, ["commit", "-m"]), "").ShouldBeEmpty();
 
   [Fact]
-  public void TooltipsCarryTheDescription() => CompletionEngine.Complete(ContextResolver.Resolve(_git, []), "commit").ShouldHaveSingleItem().ToolTip
-    .ShouldBe("Record changes");
+  public void TooltipsCarryTheDescription()
+    => CompletionEngine.Complete(_session, ContextResolver.Resolve(_git, []), "commit").ShouldHaveSingleItem()
+      .ToolTip
+      .ShouldBe("Record changes");
 
   private static IReadOnlyList<string> Complete(string typed, string word) {
     var tokens = typed.Length == 0 ? [] : typed.Split(' ');
 
-    return [.. CompletionEngine.Complete(ContextResolver.Resolve(_git, tokens), word).Select(result => result.CompletionText)];
+    return [.. CompletionEngine.Complete(_session, ContextResolver.Resolve(_git, tokens), word).Select(result => result.CompletionText)];
   }
 
   private static CommandAst Command(string input)

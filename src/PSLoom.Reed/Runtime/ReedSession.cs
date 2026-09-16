@@ -4,23 +4,36 @@
 using System.Management.Automation.Runspaces;
 using System.Runtime.CompilerServices;
 using PSLoom.Warp.Diagnostics;
-using PSLoom.Warp.Hosting;
 
 namespace PSLoom.Reed.Runtime;
 
 /// <summary>
-///   Reed's state in one runspace: the registry, the trace log and the names already wired into tab completion. Like every
-///   kernel store, it lives as long as its runspace and never leaks into another.
+///   Reed's state in one runspace: the registry, the providers, the cache, the trace log and the names already wired into tab
+///   completion. Like every kernel store, it lives as long as its runspace and never leaks into another.
 /// </summary>
 internal sealed class ReedSession {
   private static readonly ConditionalWeakTable<Runspace, ReedSession> _sessions = [];
 
-  private ReedSession() { }
+  /// <summary>
+  ///   Creates a detached session. Every runspace's session comes from <see cref="For" />; a loose one is what a unit test of the
+  ///   completion path wants, with no runspace in sight.
+  /// </summary>
+  internal ReedSession() { }
 
   /// <summary>
   ///   Gets the completers registered in this runspace.
   /// </summary>
   public CompleterRegistry Completers { get; } = new();
+
+  /// <summary>
+  ///   Gets the named sources registered in this runspace.
+  /// </summary>
+  public ProviderRegistry Providers { get; } = new();
+
+  /// <summary>
+  ///   Gets the candidates sources cached in this runspace.
+  /// </summary>
+  public CompletionCache Cache { get; } = new();
 
   /// <summary>
   ///   Gets the names already wired with <c>Register-ArgumentCompleter -Native</c>. Wiring is never unwound, so a name is wired

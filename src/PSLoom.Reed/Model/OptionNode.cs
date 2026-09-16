@@ -42,7 +42,9 @@ public sealed class OptionNode {
   ///   Copies this option, so an option group's template is never shared with the nodes that use it.
   /// </summary>
   internal OptionNode Clone()
-    => new(Name, [.. Aliases], Description) { Value = Value is { } value ? new ArgumentNode(value.Name, value.Variadic) : null };
+    => new(Name, [.. Aliases], Description) {
+      Value = Value is { } value ? new ArgumentNode(value.Name, value.Variadic) { Source = value.Source } : null
+    };
 
   /// <inheritdoc />
   public override string ToString()

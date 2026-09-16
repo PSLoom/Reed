@@ -42,7 +42,7 @@ public static class ReedBridge {
       }
 
       var tokens = TokenClassifier.Preceding(commandAst, cursorPosition);
-      var results = CompletionEngine.Complete(ContextResolver.Resolve(registration.Compiled, tokens), word);
+      var results = CompletionEngine.Complete(session, ContextResolver.Resolve(registration.Compiled, tokens), word);
 
       session.Record(command, word, Stopwatch.GetElapsedTime(started), results.Count, null);
 

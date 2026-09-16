@@ -1,6 +1,8 @@
 // Copyright (c) Bruno Sales <me@baliestri.dev>. Licensed under the MIT License.
 // See the LICENSE file in the repository root for full license text.
 
+using PSLoom.Reed.Model;
+
 namespace PSLoom.Reed.Completion;
 
 /// <summary>
@@ -17,9 +19,10 @@ internal static class ContextResolver {
     ArgumentNullException.ThrowIfNull(tokens);
 
     var command = completer.Root;
+    var path = new List<string> { completer.Command };
     var bound = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    var arguments = new List<string>();
     CompiledOption? expecting = null;
-    var positional = 0;
 
     foreach (var token in tokens) {
       if (expecting is not null) {
@@ -45,14 +48,28 @@ internal static class ContextResolver {
 
       if (command.Commands.TryGetValue(token, out var child)) {
         command = child;
-        positional = 0;
+        path.Add(child.Name);
+        arguments.Clear();
         continue;
       }
 
-      positional++;
+      arguments.Add(token);
     }
 
-    return new CompletionContext(command, bound, expecting, positional);
+    return new CompletionContext(command, path, bound, arguments, expecting, Expected(command, expecting, arguments.Count));
+  }
+
+  private static ArgumentNode? Expected(CompiledCommand command, CompiledOption? expecting, int positional) {
+    if (expecting is not null) {
+      return expecting.Value;
+    }
+
+    if (positional < command.Arguments.Count) {
+      return command.Arguments[positional];
+    }
+
+    // Past the declared slots only a variadic last one keeps accepting values.
+    return command.Arguments is [.., { Variadic: true } last] ? last : null;
   }
 
   private static bool IsOption(string token)

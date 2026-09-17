@@ -1,4 +1,4 @@
-# The "typical draft" the startup budget is defined against: Reed threaded, styles, treadles, the git completer applied in the draft
+# The "typical draft" Reed's startup budget is defined against: Reed threaded, styles, treadles, the git completer applied in the draft
 # and the docker completer staged after the first prompt. Measure-Startup.ps1 dot-sources it after Import-Module PSLoom and times it.
 Invoke-Loom -Draft {
   Thread Reed

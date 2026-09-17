@@ -26,8 +26,8 @@
   PrivateData = @{
     PSData = @{
       Tags = @('powershell', 'pwsh', 'psloom', 'harness', 'completion')
-      LicenseUri = 'https://github.com/baliestri/PSLoom/blob/main/LICENSE.md'
-      ProjectUri = 'https://github.com/baliestri/PSLoom'
+      LicenseUri = 'https://github.com/PSLoom/Reed/blob/main/LICENSE.md'
+      ProjectUri = 'https://github.com/PSLoom/Reed'
     }
   }
 }

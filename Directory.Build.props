@@ -10,7 +10,6 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
 
     <RepositoryRoot>$(MSBuildThisFileDirectory)</RepositoryRoot>
-    <ArtifactsModulesDirectory>$(RepositoryRoot)artifacts\modules\</ArtifactsModulesDirectory>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
@@ -26,13 +25,19 @@
   <PropertyGroup>
     <Authors>Bruno Sales</Authors>
     <Copyright>Copyright (c) $([System.DateTime]::Now.Year) Bruno Sales &lt;me@baliestri.dev&gt;</Copyright>
-    <PackageProjectUrl>https://github.com/PSLoom/PSLoom</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/PSLoom/Reed</PackageProjectUrl>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-    <RepositoryUrl>https://github.com/baliestri/PSLoom</RepositoryUrl>
+    <RepositoryUrl>https://github.com/PSLoom/Reed</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="$(AssemblyName).Tests" />
   </ItemGroup>
+  <!-- Local SDK versions must not query the private feed, even without credentials. -->
+  <PropertyGroup Condition="'$(PSLoomVersion)' != '' and $(PSLoomVersion.StartsWith('0.0.0-local.'))">
+    <RestoreConfigFile>$(RepositoryRoot)nuget.local.config</RestoreConfigFile>
+    <PSLoomLocalPackageSource Condition="'$(PSLoomLocalPackageSource)' == ''">$([System.IO.Path]::Combine($([System.Environment]::GetFolderPath(SpecialFolder.UserProfile)), '.psloom', 'packages'))</PSLoomLocalPackageSource>
+    <RestoreSources>$(PSLoomLocalPackageSource);https://api.nuget.org/v3/index.json</RestoreSources>
+  </PropertyGroup>
 </Project>

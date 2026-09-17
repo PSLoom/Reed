@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json;
 using PSLoom.TestKit;
 
-namespace PSLoom.Integration.Tests.Utility;
+namespace PSLoom.Reed.Integration.Tests.Utility;
 
 /// <summary>
 ///   Runs a script in a fresh <c>pwsh</c> process against the published modules, the way a user's profile loads them: no profile,

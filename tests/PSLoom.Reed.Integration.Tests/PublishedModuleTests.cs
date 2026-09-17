@@ -2,14 +2,14 @@
 // See the LICENSE file in the repository root for full license text.
 
 using System.Text.Json;
-using PSLoom.Integration.Tests.Utility;
+using PSLoom.Reed.Integration.Tests.Utility;
 using PSLoom.TestKit;
 
-namespace PSLoom.Integration.Tests;
+namespace PSLoom.Reed.Integration.Tests;
 
 /// <summary>
 ///   The published modules, driven from a real <c>pwsh</c> process. Everything in-process tests cannot see lives here: module
-///   manifests, assembly loading across two module folders, and the engine actually exiting.
+///   manifests, assembly loading across two module folders, and argument completion through TabExpansion2.
 /// </summary>
 public sealed class PublishedModuleTests {
   [Fact]
@@ -51,7 +51,6 @@ public sealed class PublishedModuleTests {
   }
 
   [Theory]
-  [InlineData("PSLoom")]
   [InlineData("PSLoom.Reed")]
   public void EveryExportedCmdletIsTheManifestsList(string module) {
     var manifest = RepositoryLayout.ReadDataFile(Path.Combine(RepositoryLayout.GetPublishedModuleDirectory(module), $"{module}.psd1"));
@@ -88,52 +87,6 @@ public sealed class PublishedModuleTests {
     json.GetProperty("count").GetInt32().ShouldBe(1);
     Path.GetFullPath(json.GetProperty("location").GetString()!).TrimEnd(Path.DirectorySeparatorChar)
       .ShouldBe(Path.GetFullPath(json.GetProperty("kernel").GetString()!).TrimEnd(Path.DirectorySeparatorChar));
-  }
-
-  [Fact]
-  public void SessionExitingFiresWhenTheEngineExits() {
-    var marker = Path.Combine(Path.GetTempPath(), $"psloom-exiting-{Guid.NewGuid():N}.txt");
-
-    try {
-      // No wiring call: importing the kernel is enough, and the hook must run as the process shuts down. The handler writes through
-      // .NET on purpose: by then the runspace is Closing, so PowerShell can no longer auto-load a module such as the one holding
-      // Set-Content — true of any Exiting handler, PSLoom's or not.
-      var result = PwshProcess.Run(
-        $$"""
-          Import-Module PSLoom
-          Register-Hook SessionExiting { [System.IO.File]::WriteAllText('{{marker}}', 'exited') } | Out-Null
-          exit 0
-          """);
-
-      result.ExitCode.ShouldBe(0, result.Error);
-      File.Exists(marker).ShouldBeTrue();
-    }
-    finally {
-      File.Delete(marker);
-    }
-  }
-
-  [Fact]
-  public void AFailingVerbNeverTearsDownTheCallersScript() {
-    var result = PwshProcess.Run(
-      """
-      Import-Module PSLoom
-      Invoke-Loom {
-        Treadle 'not a name' { git log }
-        Style 'app:*' 'color' 'Cyan'
-      }
-      [pscustomobject]@{
-        errors = @($Error | ForEach-Object FullyQualifiedErrorId)
-        color = Get-Style 'app:main' 'color'
-        reached = $true
-      } | ConvertTo-Json -Compress
-      """);
-
-    var json = result.Json();
-
-    json.GetProperty("reached").GetBoolean().ShouldBeTrue();
-    json.GetProperty("color").GetString().ShouldBe("Cyan");
-    Strings(json, "errors").ShouldHaveSingleItem().ShouldStartWith("TREADLE_INVALID_NAME");
   }
 
   private static IReadOnlyList<string> Strings(JsonElement json, string property)

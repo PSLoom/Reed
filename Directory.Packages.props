@@ -3,11 +3,21 @@
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" />
     <PackageVersion Include="Microsoft.PowerShell.SDK" Version="7.6.4" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="System.Management.Automation" Version="7.6.4" />
     <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.10" />
     <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.2" />
+  </ItemGroup>
+  <PropertyGroup>
+    <!-- One version for all kernel packages; override with -p:PSLoomVersion=0.0.0-local.&lt;stamp&gt;. -->
+    <PSLoomVersion Condition="'$(PSLoomVersion)' == ''">0.1.0-alpha.1</PSLoomVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="PSLoom" Version="$(PSLoomVersion)" />
+    <PackageVersion Include="PSLoom.TestKit" Version="$(PSLoomVersion)" />
+    <PackageVersion Include="PSLoom.Warp" Version="$(PSLoomVersion)" />
+    <GlobalPackageReference Include="PSLoom.Build" Version="$(PSLoomVersion)" />
   </ItemGroup>
 </Project>

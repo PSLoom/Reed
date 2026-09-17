@@ -6,7 +6,8 @@
 .DESCRIPTION
   Starts a fresh `pwsh -NoProfile -NonInteractive` process per iteration against artifacts/modules, times
   `Import-Module PSLoom` (and, when -DraftPath is given, the draft on top of the import) inside that process, and
-  reports the median. Exits with code 1 when a median exceeds its budget.
+  reports the median. The kernel module comes from the PSLoom package, restored to artifacts/modules by an integration or benchmark build.
+  Exits with code 1 when a median exceeds its budget.
 
 .PARAMETER Iterations
   Number of cold processes per measurement. Default 10.

@@ -1,0 +1,33 @@
+<Solution>
+  <Folder Name="/.github/" />
+  <Folder Name="/.github/workflows/">
+    <File Path=".github/workflows/ci.yml" />
+  </Folder>
+  <Folder Name="/Benchmarks/">
+    <File Path="benchmarks/Assert-Budgets.ps1" />
+    <File Path="benchmarks/drafts/eager.ps1" />
+    <File Path="benchmarks/drafts/staged.ps1" />
+    <File Path="benchmarks/drafts/typical.ps1" />
+    <File Path="benchmarks/Measure-Startup.ps1" />
+    <Project Path="benchmarks/PSLoom.Reed.Benchmarks/PSLoom.Reed.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="Directory.Packages.props" />
+    <File Path="dotnet-tools.json" />
+    <File Path="global.json" />
+    <File Path="LICENSE.md" />
+    <File Path="nuget.config" />
+    <File Path="nuget.local.config" />
+  </Folder>
+  <Folder Name="/Source/">
+    <Project Path="src/PSLoom.Reed/PSLoom.Reed.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/PSLoom.Reed.Integration.Tests/PSLoom.Reed.Integration.Tests.csproj" />
+    <Project Path="tests/PSLoom.Reed.Tests/PSLoom.Reed.Tests.csproj" />
+  </Folder>
+</Solution>

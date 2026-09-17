@@ -29,7 +29,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\PSLoom.Reed\PSLoom.Reed.csproj" />
     <!-- Reed references Warp compile-only; the test host needs the kernel (and its Warp.dll) at runtime, as a session would. -->
-    <ProjectReference Include="..\..\src\PSLoom\PSLoom.csproj" />
-    <ProjectReference Include="..\PSLoom.TestKit\PSLoom.TestKit.csproj" />
+    <PackageReference Include="PSLoom" />
+    <PackageReference Include="PSLoom.TestKit" />
   </ItemGroup>
 </Project>

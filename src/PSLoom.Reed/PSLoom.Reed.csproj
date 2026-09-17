@@ -30,8 +30,8 @@
     <!--
       Compile-time only: Warp.dll must never be copied next to PSLoom.Reed.dll. At runtime the harness binds to the copy
       shipped by the PSLoom kernel module; a second copy would load duplicate, non-convertible contract types.
-      Reed never references the kernel (PSLoom.csproj).
+      Reed never references the kernel.
     -->
-    <ProjectReference Include="..\Warp\Warp.csproj" Private="false" ExcludeAssets="runtime" />
+    <PackageReference Include="PSLoom.Warp" PrivateAssets="all" ExcludeAssets="runtime" />
   </ItemGroup>
 </Project>

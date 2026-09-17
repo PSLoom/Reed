@@ -1,0 +1,33 @@
+name: Feed access
+run-name: Feed access ${{ inputs.correlation }}
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        required: true
+      correlation:
+        type: string
+        required: true
+permissions:
+  contents: read
+  packages: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Pin PowerShell
+        shell: pwsh
+        run: ./.github/scripts/Install-PowerShell.ps1
+      - name: Download SDK with Reed token
+        shell: pwsh
+        env:
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SDK_VERSION: ${{ inputs.version }}
+        run: ./.github/scripts/Test-FeedAccess.ps1 -Version $env:SDK_VERSION

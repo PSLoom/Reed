@@ -1,0 +1,8 @@
+{
+  "prefix": "reed",
+  "module": "PSLoom.Reed",
+  "solution": "PSLoom.Reed.slnx",
+  "packages": [
+    "PSLoom.Reed"
+  ]
+}

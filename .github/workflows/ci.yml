@@ -2,12 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [main]
-    tags: ['psloom/v*', 'reed/v*']
+    branches: [main, develop]
+    tags: ['reed/v*']
   pull_request:
 
 permissions:
   contents: read
+  packages: read
+
+env:
+  GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   build:
@@ -28,14 +32,14 @@ jobs:
           global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore PSLoom.slnx
+        run: dotnet restore PSLoom.Reed.slnx
 
       - name: Build
-        run: dotnet build PSLoom.slnx --configuration Release --no-restore
+        run: dotnet build PSLoom.Reed.slnx --configuration Release --no-restore
 
       # Includes the published-module integration tests, which start real pwsh processes against artifacts/modules.
       - name: Test
-        run: dotnet test --solution PSLoom.slnx --configuration Release --no-build
+        run: dotnet test --solution PSLoom.Reed.slnx --configuration Release --no-build
 
       # Import < 50 ms and the typical draft < 150 ms, medians of cold processes (section 6 of the design).
       - name: Startup budgets
@@ -46,6 +50,20 @@ jobs:
       - name: Eager draft (report only)
         shell: pwsh
         run: ./benchmarks/Measure-Startup.ps1 -DraftPath ./benchmarks/drafts/eager.ps1 -ReportOnly
+
+      - name: Pack Reed release artifact
+        if: startsWith(github.ref, 'refs/tags/reed/v')
+        run: dotnet pack src/PSLoom.Reed --configuration Release --no-restore --output artifacts/packages
+
+      - name: Upload Reed release artifact
+        if: startsWith(github.ref, 'refs/tags/reed/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: reed-${{ matrix.os }}
+          path: |
+            artifacts/packages/*.nupkg
+            artifacts/modules/PSLoom.Reed
+          if-no-files-found: error
 
   benchmarks:
     # One OS only: shared runners are noisy and BenchmarkDotNet is slow; the budgets are orders of magnitude apart from noise.
@@ -63,8 +81,8 @@ jobs:
 
       - name: Run budgeted benchmarks
         run: >-
-          dotnet run --configuration Release --project benchmarks/PSLoom.Benchmarks --
-          --filter '*StyleResolveBenchmarks*' '*HookDispatchBenchmarks*' '*CompletionBenchmarks*'
+          dotnet run --configuration Release --project benchmarks/PSLoom.Reed.Benchmarks --
+          --filter '*CompletionBenchmarks*'
           --exporters json
 
       - name: Check budgets

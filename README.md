@@ -72,25 +72,15 @@ Import-Module PSLoom
 Invoke-Loom -Draft { Thread Reed }
 ```
 
-CI uses `GITHUB_TOKEN` with `packages: read`; the Reed repository also needs Actions read access on each private kernel package. Builds run on Windows, Linux and macOS for pushes to `main` and `develop`, and for pull requests. The `Release` workflow calls the same CI checks for `reed/v*` tags.
+CI uses `GITHUB_TOKEN` with `packages: read`; the Reed repository also needs Actions read access on each private kernel package. Builds run on Windows, Linux and macOS for pull requests and through the release coordinator for pushes to `main` and `develop`.
 
 ## Automated releases
 
-Push a semantic version tag from the commit on `develop` that you want to release. The `Release` workflow validates the tag and calls the reusable `CI` workflow on that same commit. Branch pushes and pull requests continue to run `CI` independently; tag pushes run `Release`.
+Pushes to `develop` validate and prepare automatic `alpha.N` releases; `main` produces stable `0.x` versions. Tags and GitHub Packages publication are managed by the release coordinator after CI and final-package validation. Publication remains disabled until `RELEASE_ENABLED=true` and the GitHub App and package permissions are configured.
 
-```powershell
-git switch develop
-git tag -a reed/v0.1.0-alpha.1 -m "PSLoom.Reed 0.1.0-alpha.1"
-git push origin reed/v0.1.0-alpha.1
-```
+Promotion PRs require human merge. SDK update PRs in Reed enable auto-merge after required checks. Performance durations are initially reported without blocking releases; execution failures and invalid results still fail.
 
-Use a new version for each release. Tags accept `MAJOR.MINOR.PATCH[-PRERELEASE]`; build metadata (`+...`) is rejected because NuGet does not use it to distinguish package versions. Any prerelease suffix, including `alpha`, `beta` and `rc`, produces a GitHub prerelease.
-
-After all tests, startup budgets and benchmarks pass, the workflow packs the exact tagged version, validates the package assets and creates a draft GitHub Release. It then publishes `PSLoom.Reed` to the organization's GitHub Packages feed and makes the release visible. The release contains the `.nupkg` files and a `PSLoom.Reed.<version>.zip` with the installable `PSLoom.Reed/<core-version>/` module directory. The ZIP is assembled from the packaged module, so it matches the NuGet contents. Packages and releases inherit their configured GitHub visibility; nothing is published to PSGallery or nuget.org.
-
-The publishing job uses `GITHUB_TOKEN` with `packages: write` and `contents: write`. Verification jobs retain read permissions. Assets are also retained as an Actions artifact if external publication fails. Publication is not transactional: a failure can leave some packages published and the GitHub Release in draft. Versions are never silently overwritten or skipped; inspect any partial publication and release a new version instead of moving an existing tag.
-
-Publish the kernel SDK first and grant `PSLoom/Reed` Actions read access to `PSLoom`, `PSLoom.Warp`, `PSLoom.Build` and `PSLoom.TestKit`. `packages: read` alone does not grant access to another repository's private packages. The pinned `PSLoomVersion` must exist and be accessible before Reed's CI or release can pass; Reed's tag sets its own version, not the kernel version.
+See [release operations](.github/RELEASING.md) for setup, dry runs, branch protections, integration tests and recovery of partial publications. Nothing is published to PSGallery or nuget.org.
 
 ## Local kernel development
 

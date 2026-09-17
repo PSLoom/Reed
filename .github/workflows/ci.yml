@@ -3,8 +3,8 @@ name: CI
 on:
   push:
     branches: [main, develop]
-    tags: ['reed/v*']
   pull_request:
+  workflow_call:
 
 permissions:
   contents: read
@@ -50,20 +50,6 @@ jobs:
       - name: Eager draft (report only)
         shell: pwsh
         run: ./benchmarks/Measure-Startup.ps1 -DraftPath ./benchmarks/drafts/eager.ps1 -ReportOnly
-
-      - name: Pack Reed release artifact
-        if: startsWith(github.ref, 'refs/tags/reed/v')
-        run: dotnet pack src/PSLoom.Reed --configuration Release --no-restore --output artifacts/packages
-
-      - name: Upload Reed release artifact
-        if: startsWith(github.ref, 'refs/tags/reed/v')
-        uses: actions/upload-artifact@v4
-        with:
-          name: reed-${{ matrix.os }}
-          path: |
-            artifacts/packages/*.nupkg
-            artifacts/modules/PSLoom.Reed
-          if-no-files-found: error
 
   benchmarks:
     # One OS only: shared runners are noisy and BenchmarkDotNet is slow; the budgets are orders of magnitude apart from noise.

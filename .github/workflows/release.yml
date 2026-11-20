@@ -1,0 +1,161 @@
+name: Release
+
+# A tag v<version> builds the module, packs it as a .nupkg and attaches the package to a GitHub release. A
+# plain MAJOR.MINOR.PATCH version is also published to the PowerShell Gallery, from that same package; a
+# version with a pre-release suffix only gets the GitHub release.
+#
+# The Gallery job runs only when the repository variable PUBLISH_PSGALLERY is 'true'. It reads the secret
+# PSGALLERY_API_KEY and runs in the psgallery environment.
+#
+# It also starts by dispatch, which is how prepare-release.yml starts it: a tag pushed by a workflow does not
+# start another workflow. A dispatch has to be on the tag; on a branch, the first job fails. Running it again
+# on a tag that already has a release replaces the packages of that release instead of failing.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: The tag matches the version of the repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - run: |
+          version="$(sed -n 's/.*<Version>\([^<]*\)<\/Version>.*/\1/p' Version.props)"
+          if [ "$GITHUB_REF_TYPE" != "tag" ] || [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Run this on the tag v$version: it ran on the $GITHUB_REF_TYPE $GITHUB_REF_NAME."
+            exit 1
+          fi
+
+  github:
+    name: GitHub release
+    needs: verify
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # A harness is built against the repositories named by its <Repository>.ref files, checked out as siblings.
+      - name: Check out the neighbor repositories at their pinned refs
+        run: |
+          shopt -s nullglob
+          for pin in *.ref; do
+            name="${pin%.ref}"
+            ref="$(tr -d '[:space:]' < "$pin")"
+            git clone --quiet "https://github.com/$GITHUB_REPOSITORY_OWNER/$name.git" "../$name"
+            git -C "../$name" checkout --quiet --detach "$ref"
+          done
+
+      # The shared scripts and build files live in the base: here, or in the sibling checkout of a harness.
+      - name: Locate the shared engineering directory
+        run: |
+          if [ -d eng/build ]; then
+            echo "ENG=eng" >> "$GITHUB_ENV"
+          else
+            echo "ENG=../PSLoom/eng" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+
+      - name: Install the PowerShell the module is built for
+        run: |
+          version="$(sed -n 's/.*Include="System.Management.Automation" Version="\([^"]*\)".*/\1/p' "$ENG/build/Packages.props")"
+          dotnet tool install --global PowerShell --version "$version"
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - run: dotnet restore --locked-mode
+
+      - run: dotnet build --no-restore --configuration Release
+
+      - run: dotnet test --no-build --configuration Release
+
+      - name: Pack the modules
+        run: pwsh -NoProfile -File "$ENG/New-ModulePackage.ps1" -Destination release-artifacts
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A release that already exists only gets its packages replaced, so the workflow can run again.
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" release-artifacts/*.nupkg --clobber
+            exit 0
+          fi
+          flags=()
+          case "$GITHUB_REF_NAME" in
+            *-*) flags+=(--prerelease) ;;
+          esac
+          # The notes are the section of the version in the changelog. A tag pushed by hand for a version
+          # the changelog does not have falls back to generated notes.
+          if pwsh -NoProfile -File "$ENG/Get-ChangelogSection.ps1" -Version "${GITHUB_REF_NAME#v}" > "$RUNNER_TEMP/notes.md"; then
+            flags+=(--notes-file "$RUNNER_TEMP/notes.md")
+          else
+            flags+=(--generate-notes)
+          fi
+          gh release create "$GITHUB_REF_NAME" release-artifacts/*.nupkg --verify-tag "${flags[@]}"
+
+  psgallery:
+    name: PowerShell Gallery
+    needs: github
+    # Pre-releases stay on GitHub. The variable keeps the Gallery closed until the owner opens it.
+    if: ${{ !contains(github.ref_name, '-') && vars.PUBLISH_PSGALLERY == 'true' }}
+    runs-on: ubuntu-24.04
+    environment: psgallery
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # A harness is built against the repositories named by its <Repository>.ref files, checked out as siblings.
+      - name: Check out the neighbor repositories at their pinned refs
+        run: |
+          shopt -s nullglob
+          for pin in *.ref; do
+            name="${pin%.ref}"
+            ref="$(tr -d '[:space:]' < "$pin")"
+            git clone --quiet "https://github.com/$GITHUB_REPOSITORY_OWNER/$name.git" "../$name"
+            git -C "../$name" checkout --quiet --detach "$ref"
+          done
+
+      # The shared scripts and build files live in the base: here, or in the sibling checkout of a harness.
+      - name: Locate the shared engineering directory
+        run: |
+          if [ -d eng/build ]; then
+            echo "ENG=eng" >> "$GITHUB_ENV"
+          else
+            echo "ENG=../PSLoom/eng" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+
+      # Publishing a .nupkg needs the PSResourceGet that ships with this PowerShell.
+      - name: Install the PowerShell the module is built for
+        run: |
+          version="$(sed -n 's/.*Include="System.Management.Automation" Version="\([^"]*\)".*/\1/p' "$ENG/build/Packages.props")"
+          dotnet tool install --global PowerShell --version "$version"
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Download the packages of the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "$GITHUB_REF_NAME" --pattern '*.nupkg' --dir release-artifacts
+
+      - name: Publish
+        env:
+          PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
+        run: |
+          pwsh -NoProfile -NonInteractive -Command '
+            $ErrorActionPreference = "Stop"
+            foreach ($package in Get-ChildItem -LiteralPath release-artifacts -Filter *.nupkg) {
+              Publish-PSResource -NupkgPath $package.FullName -Repository PSGallery -ApiKey $env:PSGALLERY_API_KEY
+            }'

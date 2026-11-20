@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPowerShellModule>true</IsPowerShellModule>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Declarative argument completion for PowerShell</Description>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,3 @@
+<Project>
+  <Import Project="$(PSLoomRepo)eng/build/Harness.targets" Condition="Exists('$(PSLoomRepo)eng/build/Harness.targets')" />
+</Project>

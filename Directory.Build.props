@@ -1,0 +1,14 @@
+<Project InitialTargets="RequireBaseRepository">
+  <PropertyGroup>
+    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+    <PSLoomRepo Condition="'$(PSLoomRepo)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', '..', 'PSLoom'))</PSLoomRepo>
+  </PropertyGroup>
+
+  <Import Project="$(PSLoomRepo)eng/build/Harness.props" Condition="Exists('$(PSLoomRepo)eng/build/Harness.props')" />
+  <Import Project="$(RepoRoot)Version.props" />
+
+  <Target Name="RequireBaseRepository">
+    <Error Condition="!Exists('$(PSLoomRepo)eng/build/Harness.props')"
+           Text="The base repository was not found at '$(PSLoomRepo)'. Clone PSLoom/PSLoom next to this repository, in a folder named PSLoom, at the ref in PSLoom.ref." />
+  </Target>
+</Project>
